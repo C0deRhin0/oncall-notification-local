@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Dashboard</h1>
+  <span class="page-subtitle">System status &amp; incident feed</span>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-value stat-value--danger">{{ active_count }}</div>
+    <div class="stat-label">Active Incidents</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value stat-value--ok">{{ resolved_count }}</div>
+    <div class="stat-label">Resolved</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ oncall_count }}</div>
+    <div class="stat-label">Engineers On-Call</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ engineer_count }}</div>
+    <div class="stat-label">Total Engineers</div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title">Recent Incidents</h2>
+    <a href="{{ url_for('logs.index') }}" class="btn btn--sm">View All Logs</a>
+  </div>
+
+  {% if incidents %}
+  <table class="data-table" id="incidents-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Triggered</th>
+        <th>Subject</th>
+        <th>Status</th>
+        <th>Notifications</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inc in incidents %}
+      <tr class="incident-row {% if inc.status == 'active' %}row--active{% endif %}" data-incident="{{ inc.id }}">
+        <td class="mono">{{ inc.id }}</td>
+        <td class="mono">{{ inc.triggered_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</td>
+        <td class="truncate" title="{{ inc.email_subject }}">{{ inc.email_subject[:60] }}{% if inc.email_subject|length > 60 %}…{% endif %}</td>
+        <td><span class="badge badge--{{ inc.status }}">{{ inc.status }}</span></td>
+        <td class="mono">{{ inc.notification_logs|length }}</td>
+        <td>
+          <button class="btn btn--sm btn--ghost" onclick="toggleDetail({{ inc.id }})">▼ expand</button>
+        </td>
+      </tr>
+      <tr class="detail-row" id="detail-{{ inc.id }}" style="display:none;">
+        <td colspan="6">
+          <div class="detail-box">
+            <div class="detail-body-snippet"><strong>Body snippet:</strong> {{ inc.body_snippet or '(empty)' }}</div>
+            {% if inc.notification_logs %}
+            <table class="inner-table">
+              <thead><tr><th>Time (UTC)</th><th>Engineer</th><th>Type</th><th>Status</th><th>SID</th></tr></thead>
+              <tbody>
+                {% for log in inc.notification_logs|sort(attribute='timestamp') %}
+                <tr>
+                  <td class="mono">{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                  <td>{{ log.engineer.name if log.engineer else '—' }}</td>
+                  <td><span class="badge badge--type-{{ log.type }}">{{ log.type }}</span></td>
+                  <td><span class="badge badge--{{ log.status or 'unknown' }}">{{ log.status or '—' }}</span></td>
+                  <td class="mono small">{{ log.twilio_sid or '—' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <p class="dim">No notification logs yet.</p>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">No incidents recorded yet. The system is monitoring the inbox.</p>
+  {% endif %}
+</section>
+{% endblock %}

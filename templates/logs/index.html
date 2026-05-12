@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Logs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">Notification Logs</h1>
+  <div class="header-actions">
+    <a href="{{ url_for('logs.export', range='weekly') }}" class="btn btn--sm" id="export-weekly">Export Weekly</a>
+    <a href="{{ url_for('logs.export', range='monthly') }}" class="btn btn--sm" id="export-monthly">Export Monthly</a>
+  </div>
+</div>
+
+<!-- Filters -->
+<section class="section section--filters">
+  <form method="GET" action="{{ url_for('logs.index') }}" class="filter-bar" id="log-filter-form">
+    <div class="form-group form-group--sm">
+      <label class="form-label">Status</label>
+      <select name="status" class="form-input" id="filter-status">
+        <option value="">All</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+        <option value="resolved" {% if status_filter == 'resolved' %}selected{% endif %}>Resolved</option>
+      </select>
+    </div>
+    <div class="form-group form-group--sm">
+      <label class="form-label">From</label>
+      <input name="date_from" type="date" class="form-input mono" id="filter-from" value="{{ date_from }}" />
+    </div>
+    <div class="form-group form-group--sm">
+      <label class="form-label">To</label>
+      <input name="date_to" type="date" class="form-input mono" id="filter-to" value="{{ date_to }}" />
+    </div>
+    <button type="submit" class="btn btn--sm btn--primary" id="apply-filter-btn">Apply</button>
+    <a href="{{ url_for('logs.index') }}" class="btn btn--sm btn--ghost" id="clear-filter-btn">Clear</a>
+  </form>
+</section>
+
+<section class="section">
+  {% if incidents.items %}
+  <table class="data-table" id="logs-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Triggered (UTC)</th>
+        <th>Subject</th>
+        <th>Status</th>
+        <th>Attempts</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inc in incidents.items %}
+      <tr class="incident-row {% if inc.status == 'active' %}row--active{% endif %}">
+        <td class="mono">{{ inc.id }}</td>
+        <td class="mono">{{ inc.triggered_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        <td class="truncate" title="{{ inc.email_subject }}">{{ inc.email_subject[:55] }}{% if inc.email_subject|length > 55 %}…{% endif %}</td>
+        <td><span class="badge badge--{{ inc.status }}">{{ inc.status }}</span></td>
+        <td class="mono">{{ inc.notification_logs|length }}</td>
+        <td><button class="btn btn--sm btn--ghost" onclick="toggleDetail({{ inc.id }})">▼</button></td>
+      </tr>
+      <tr class="detail-row" id="detail-{{ inc.id }}" style="display:none;">
+        <td colspan="6">
+          <div class="detail-box">
+            <div class="detail-body-snippet"><strong>Body:</strong> {{ inc.body_snippet or '(empty)' }}</div>
+            {% if inc.notification_logs %}
+            <table class="inner-table">
+              <thead><tr><th>Time</th><th>Engineer</th><th>Type</th><th>Status</th><th>SID</th><th>Notes</th></tr></thead>
+              <tbody>
+                {% for log in inc.notification_logs|sort(attribute='timestamp') %}
+                <tr>
+                  <td class="mono">{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                  <td>{{ log.engineer.name if log.engineer else '—' }}</td>
+                  <td><span class="badge badge--type-{{ log.type }}">{{ log.type }}</span></td>
+                  <td><span class="badge badge--{{ log.status or 'unknown' }}">{{ log.status or '—' }}</span></td>
+                  <td class="mono small">{{ log.twilio_sid or '—' }}</td>
+                  <td class="small">{{ log.notes or '' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <p class="dim">No logs.</p>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Pagination -->
+  <div class="pagination" id="pagination">
+    {% if incidents.has_prev %}
+    <a href="{{ url_for('logs.index', page=incidents.prev_num, status=status_filter, date_from=date_from, date_to=date_to) }}" class="btn btn--sm">← Prev</a>
+    {% endif %}
+    <span class="mono">Page {{ incidents.page }} of {{ incidents.pages }}</span>
+    {% if incidents.has_next %}
+    <a href="{{ url_for('logs.index', page=incidents.next_num, status=status_filter, date_from=date_from, date_to=date_to) }}" class="btn btn--sm">Next →</a>
+    {% endif %}
+  </div>
+
+  {% else %}
+  <p class="empty-state">No incidents match the current filters.</p>
+  {% endif %}
+</section>
+{% endblock %}
