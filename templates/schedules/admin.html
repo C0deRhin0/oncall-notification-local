@@ -27,7 +27,7 @@
       <label class="form-label">Shift End</label>
       <input name="shift_end" type="datetime-local" class="form-input mono" id="shift-end" required />
     </div>
-    <div class="form-actions">
+    <div class="form-actions" style="margin-top: 0; margin-bottom: 1rem;">
       <button type="submit" class="btn btn--primary" id="add-shift-btn">Add Shift</button>
     </div>
   </form>
@@ -45,8 +45,8 @@
       {% for shift in schedules %}
       <tr>
         <td>{{ shift.engineer.name }}</td>
-        <td class="mono">{{ shift.shift_start.strftime('%Y-%m-%d %H:%M') }}</td>
-        <td class="mono">{{ shift.shift_end.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td class="mono">{{ shift.shift_start|local_time }}</td>
+        <td class="mono">{{ shift.shift_end|local_time }}</td>
         <td><span class="badge badge--{{ 'approved' if shift.is_approved else 'pending' }}">{{ 'Approved' if shift.is_approved else 'Pending' }}</span></td>
         <td>
           <form method="POST" action="{{ url_for('schedules.delete_shift', shift_id=shift.id) }}" style="display:inline;">
@@ -74,9 +74,9 @@
       {% for req in pending %}
       <tr>
         <td>{{ req.engineer.name }}</td>
-        <td class="mono">{{ req.requested_start.strftime('%Y-%m-%d %H:%M') }}</td>
-        <td class="mono">{{ req.requested_end.strftime('%Y-%m-%d %H:%M') }}</td>
-        <td class="mono">{{ req.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td class="mono">{{ req.requested_start|local_time }}</td>
+        <td class="mono">{{ req.requested_end|local_time }}</td>
+        <td class="mono">{{ req.submitted_at|local_time }}</td>
         <td><span class="badge badge--{{ req.status }}">{{ req.status }}</span></td>
         <td>
           <form method="POST" action="{{ url_for('schedules.approve_request', req_id=req.id) }}" style="display:inline;">
