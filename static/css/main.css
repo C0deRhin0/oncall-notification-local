@@ -44,6 +44,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-y: scroll;
 }
 
 a { color: var(--text-dim); text-decoration: none; }
@@ -241,7 +242,9 @@ a:hover { color: var(--text); }
   font-family: var(--font-mono);
 }
 .badge--active,
-.badge--failed      { background: var(--accent-red-bg);   color: #e8a89e; }
+.badge--failed,
+.badge--timed-out,
+.badge--declined    { background: var(--accent-red-bg);   color: #e8a89e; }
 .badge--resolved,
 .badge--answered,
 .badge--completed,
