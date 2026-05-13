@@ -133,7 +133,13 @@ def handle_call_status(call_sid, call_status):
                 _active_calls.pop(call_sid, None)
             logger.info(f"[orchestrator] Incident {incident_id} resolved by {engineer_id}.")
         else:
-            # No answer / busy / failed — advance queue
+            # No answer / busy / failed — send SMS to the same engineer, then advance queue
+            from app.services.sms_service import send_sms
+            engineer = Engineer.query.get(engineer_id)
+            incident = Incident.query.get(incident_id)
+            if engineer and incident:
+                send_sms(incident, engineer)
+            
             with _lock:
                 _active_calls.pop(call_sid, None)
             queue = [Engineer.query.get(eid) for eid in queue_ids]
