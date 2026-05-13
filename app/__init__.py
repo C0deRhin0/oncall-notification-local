@@ -36,6 +36,19 @@ def create_app():
     def load_user(user_id):
         return db.session.get(User, int(user_id))
 
+    # Add custom template filter for local time
+    from zoneinfo import ZoneInfo
+    import datetime
+
+    @app.template_filter('local_time')
+    def local_time_filter(dt):
+        if not dt:
+            return ""
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        tz = ZoneInfo(app.config.get("APP_TIMEZONE", "Asia/Manila"))
+        return dt.astimezone(tz).strftime('%Y-%m-%d %H:%M:%S')
+
     # Register blueprints
     from app.auth.routes import auth_bp
     from app.routes.dashboard import dashboard_bp
