@@ -20,6 +20,11 @@ class Config:
     TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
     TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
     TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "")
+    TWILIO_SMS_SENDER_ID = os.environ.get("TWILIO_SMS_SENDER_ID", TWILIO_PHONE_NUMBER)
+
+    CLICKSEND_USERNAME = os.environ.get("CLICKSEND_USERNAME", "")
+    CLICKSEND_API_KEY = os.environ.get("CLICKSEND_API_KEY", "")
+    CLICKSEND_SENDER_ID = os.environ.get("CLICKSEND_SENDER_ID", "")
 
     COMPANY_NAME = os.environ.get("COMPANY_NAME", "Nebulynx")
     TTS_TEMPLATE = os.environ.get(
@@ -35,6 +40,6 @@ class Config:
         "[ONCALL ALERT] {company_name} | Incident: {email_subject} | {email_body_snippet} | Respond immediately.",
     )
 
-    AUTO_APPROVE_SCHEDULE = os.environ.get("AUTO_APPROVE_SCHEDULE", "true").lower() == "true"
+    AUTO_APPROVE_SCHEDULE = os.environ.get("AUTO_APPROVE_SCHEDULE", "false").lower() == "true"
     INCIDENT_COOLDOWN_MINUTES = int(os.environ.get("INCIDENT_COOLDOWN_MINUTES", "5"))
     POLL_INTERVAL_SECONDS = int(os.environ.get("POLL_INTERVAL_SECONDS", "30"))
