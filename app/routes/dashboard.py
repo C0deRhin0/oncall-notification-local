@@ -24,3 +24,24 @@ def index():
         engineer_count=engineer_count,
         oncall_count=oncall_count,
     )
+
+from flask import redirect, url_for, flash
+from app import db
+
+@dashboard_bp.route("/incident/<int:incident_id>/mark-answered", methods=["POST"])
+@login_required
+def mark_answered(incident_id):
+    from flask import request
+    incident = Incident.query.get_or_404(incident_id)
+    if incident.status == "active":
+        incident.status = "resolved"
+        log = NotificationLog(
+            incident_id=incident.id,
+            type="info",
+            status="completed",
+            notes="Manually marked as answered by admin."
+        )
+        db.session.add(log)
+        db.session.commit()
+        flash(f"Incident #{incident.id} marked as answered.", "success")
+    return redirect(request.referrer or url_for("dashboard.index"))
