@@ -14,7 +14,7 @@
   </div>
   <div class="stat-card">
     <div class="stat-value stat-value--ok">{{ resolved_count }}</div>
-    <div class="stat-label">Resolved</div>
+    <div class="stat-label">Answered</div>
   </div>
   <div class="stat-card">
     <div class="stat-value">{{ oncall_count }}</div>
@@ -33,43 +33,96 @@
   </div>
 
   {% if incidents %}
-  <table class="data-table" id="incidents-table">
+  <table class="data-table" id="incidents-table" style="table-layout: fixed;">
     <thead>
       <tr>
-        <th>#</th>
-        <th>Triggered</th>
-        <th>Subject</th>
-        <th>Status</th>
-        <th>Notifications</th>
-        <th>Detail</th>
+        <th style="width: 5%;">#</th>
+        <th style="width: 18%;">Triggered (GMT+8)</th>
+        <th style="width: 25%;">Subject</th>
+        <th style="width: 8%;">Attempts</th>
+        <th style="width: 12%;">Status</th>
+        <th style="width: 15%;">Engineer</th>
+        <th style="width: 17%;">Detail</th>
       </tr>
     </thead>
     <tbody>
       {% for inc in incidents %}
       <tr class="incident-row {% if inc.status == 'active' %}row--active{% endif %}" data-incident="{{ inc.id }}">
         <td class="mono">{{ inc.id }}</td>
-        <td class="mono">{{ inc.triggered_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</td>
-        <td class="truncate" title="{{ inc.email_subject }}">{{ inc.email_subject[:60] }}{% if inc.email_subject|length > 60 %}…{% endif %}</td>
-        <td><span class="badge badge--{{ inc.status }}">{{ inc.status }}</span></td>
-        <td class="mono">{{ inc.notification_logs|length }}</td>
+        <td class="mono">{{ inc.triggered_at|local_time }}</td>
+        <td class="truncate" title="{{ inc.email_subject }}">{{ inc.email_subject[:60] }}{% if inc.email_subject|length
+          > 60 %}…{% endif %}</td>
+        {% set calls = inc.notification_logs|selectattr('type', 'equalto', 'call')|list %}
+        <td class="mono">{{ calls|length }}</td>
         <td>
-          <button class="btn btn--sm btn--ghost" onclick="toggleDetail({{ inc.id }})">▼ expand</button>
+          {% for call in calls %}
+            {% set badge_class = 'unknown' %}
+            {% set badge_text = '—' %}
+            {% if call.status == 'completed' %}
+              {% set badge_class = 'answered' %}
+              {% set badge_text = 'Answered' %}
+            {% elif call.status == 'no-answer' %}
+              {% set badge_class = 'timed-out' %}
+              {% set badge_text = 'Timed Out' %}
+            {% elif call.status == 'busy' %}
+              {% set badge_class = 'declined' %}
+              {% set badge_text = 'Declined' %}
+            {% elif call.status == 'failed' %}
+              {% set badge_class = 'failed' %}
+              {% set badge_text = 'Failed' %}
+            {% endif %}
+            <div><span class="badge badge--{{ badge_class }}">{{ badge_text }}</span></div>
+          {% endfor %}
+          {% if not calls %}—{% endif %}
+        </td>
+        <td>
+          {% for call in calls %}
+          <div>{{ call.engineer.name if call.engineer else 'Unknown' }}</div>
+          {% endfor %}
+          {% if not calls %}—{% endif %}
+        </td>
+        <td>
+          <div class="action-cell">
+            <button class="btn btn--sm btn--ghost" onclick="toggleDetail(this, {{ inc.id }})">▼ expand</button>
+            {% if inc.status == 'active' %}
+            <form action="{{ url_for('dashboard.mark_answered', incident_id=inc.id) }}" method="POST">
+                <button type="submit" class="btn btn--sm btn--ok">Mark Answered</button>
+            </form>
+            {% endif %}
+          </div>
         </td>
       </tr>
       <tr class="detail-row" id="detail-{{ inc.id }}" style="display:none;">
-        <td colspan="6">
+        <td colspan="7">
           <div class="detail-box">
             <div class="detail-body-snippet"><strong>Body snippet:</strong> {{ inc.body_snippet or '(empty)' }}</div>
             {% if inc.notification_logs %}
             <table class="inner-table">
-              <thead><tr><th>Time (UTC)</th><th>Engineer</th><th>Type</th><th>Status</th><th>SID</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Time (GMT+8)</th>
+                  <th>Engineer</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>SID</th>
+                </tr>
+              </thead>
               <tbody>
                 {% for log in inc.notification_logs|sort(attribute='timestamp') %}
                 <tr>
-                  <td class="mono">{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                  <td class="mono">{{ log.timestamp|local_time }}</td>
                   <td>{{ log.engineer.name if log.engineer else '—' }}</td>
                   <td><span class="badge badge--type-{{ log.type }}">{{ log.type }}</span></td>
-                  <td><span class="badge badge--{{ log.status or 'unknown' }}">{{ log.status or '—' }}</span></td>
+                  {% set badge_class = log.status or 'unknown' %}
+                  {% set badge_text = log.status or '—' %}
+                  {% if log.status == 'no-answer' %}
+                    {% set badge_class = 'timed-out' %}
+                    {% set badge_text = 'TIMED OUT' %}
+                  {% elif log.status == 'busy' %}
+                    {% set badge_class = 'declined' %}
+                    {% set badge_text = 'DECLINED' %}
+                  {% endif %}
+                  <td><span class="badge badge--{{ badge_class }}">{{ badge_text }}</span></td>
                   <td class="mono small">{{ log.twilio_sid or '—' }}</td>
                 </tr>
                 {% endfor %}
