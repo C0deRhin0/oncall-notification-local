@@ -90,41 +90,65 @@ def _header_style(cell):
 
 def _build_summary_sheet(ws, incidents, label):
     ws.title = "Summary"
-    headers = ["#", "Triggered At (UTC)", "Subject", "Body Snippet", "Status", "Call Attempts", "Resolved By"]
+    headers = ["#", "Triggered At (GMT+8)", "Subject", "Body Snippet", "Call Attempts", "Status", "Engineer"]
     ws.append(headers)
     for cell in ws[1]:
         _header_style(cell)
     ws.column_dimensions["B"].width = 22
     ws.column_dimensions["C"].width = 40
     ws.column_dimensions["D"].width = 30
+    ws.column_dimensions["F"].width = 15
     ws.column_dimensions["G"].width = 20
+
+    from zoneinfo import ZoneInfo
+    import datetime
+    timezone_str = current_app.config.get("APP_TIMEZONE", "Asia/Manila")
 
     for i, inc in enumerate(incidents, 1):
         calls = [l for l in inc.notification_logs if l.type == "call"]
-        resolved_by = "—"
-        answered = [l for l in inc.notification_logs if l.type == "call" and l.status == "completed"]
-        if answered and answered[0].engineer:
-            resolved_by = answered[0].engineer.name
-        elif inc.status == "active":
-            resolved_by = "Pending"
+        status_list = []
+        engineer_list = []
+        for call in calls:
+            if call.status == "completed":
+                status_val = "Answered"
+            elif call.status == "no-answer":
+                status_val = "Timed Out"
+            elif call.status == "busy":
+                status_val = "Declined"
+            elif call.status == "failed":
+                status_val = "Failed"
+            else:
+                status_val = "—"
+            status_list.append(status_val)
+            eng_name = call.engineer.name if call.engineer else "Unknown"
+            engineer_list.append(eng_name)
+            
+        status_str = "\n".join(status_list) if status_list else "—"
+        engineer_str = "\n".join(engineer_list) if engineer_list else "—"
+
+        if inc.triggered_at.tzinfo is None:
+            dt_utc = inc.triggered_at.replace(tzinfo=datetime.timezone.utc)
         else:
-            sms_fallback = [l for l in inc.notification_logs if l.type == "sms"]
-            if sms_fallback:
-                resolved_by = "SMS Fallback"
+            dt_utc = inc.triggered_at
+        local_time = dt_utc.astimezone(ZoneInfo(timezone_str)).strftime("%Y-%m-%d %H:%M:%S")
 
         ws.append([
             inc.id,
-            inc.triggered_at.strftime("%Y-%m-%d %H:%M:%S"),
+            local_time,
             inc.email_subject[:80],
             inc.body_snippet,
-            inc.status,
             len(calls),
-            resolved_by,
+            status_str,
+            engineer_str,
         ])
+        
+        row_idx = ws.max_row
+        ws.cell(row=row_idx, column=6).alignment = Alignment(wrapText=True)
+        ws.cell(row=row_idx, column=7).alignment = Alignment(wrapText=True)
 
 
 def _build_detail_sheet(ws, incidents):
-    headers = ["Log ID", "Incident ID", "Engineer", "Type", "Status", "Twilio SID", "Timestamp (UTC)"]
+    headers = ["Log ID", "Incident ID", "Engineer", "Type", "Status", "Twilio SID", "Timestamp (GMT+8)"]
     ws.append(headers)
     for cell in ws[1]:
         _header_style(cell)
@@ -138,13 +162,34 @@ def _build_detail_sheet(ws, incidents):
         .order_by(NotificationLog.timestamp)
         .all()
     )
+    from zoneinfo import ZoneInfo
+    import datetime
+    timezone_str = current_app.config.get("APP_TIMEZONE", "Asia/Manila")
+
     for log in logs:
+        if log.timestamp.tzinfo is None:
+            dt_utc = log.timestamp.replace(tzinfo=datetime.timezone.utc)
+        else:
+            dt_utc = log.timestamp
+        local_time = dt_utc.astimezone(ZoneInfo(timezone_str)).strftime("%Y-%m-%d %H:%M:%S")
+
+        status_val = log.status or "—"
+        if log.type == "call":
+            if log.status == "completed":
+                status_val = "Answered"
+            elif log.status == "no-answer":
+                status_val = "Timed Out"
+            elif log.status == "busy":
+                status_val = "Declined"
+            elif log.status == "failed":
+                status_val = "Failed"
+
         ws.append([
             log.id,
             log.incident_id,
             log.engineer.name if log.engineer else "—",
             log.type,
-            log.status or "—",
+            status_val,
             log.twilio_sid or "—",
-            log.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            local_time,
         ])
