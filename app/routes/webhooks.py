@@ -28,9 +28,9 @@ def twiml(incident_id):
         message = f"This is an automated oncall notification from {company}. Please check your systems."
 
     response = VoiceResponse()
-    response.say(message, voice="alice", language="en-US")
+    response.say(message, voice="Polly.Matthew", language="en-US")
     response.pause(length=1)
-    response.say("End of message. Goodbye.", voice="alice", language="en-US")
+    response.say("End of message. Goodbye.", voice="Polly.Matthew", language="en-US")
 
     return Response(str(response), mimetype="text/xml")
 
