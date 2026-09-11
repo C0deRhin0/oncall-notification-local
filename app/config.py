@@ -5,12 +5,12 @@ load_dotenv()
 
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "change-me")
+    SECRET_KEY = os.environ.get("SECRET_KEY")
     SQLALCHEMY_DATABASE_URI = "sqlite:///oncall.db"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
-    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
+    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME")
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 
     APP_TIMEZONE = os.environ.get("APP_TIMEZONE", "Asia/Manila")
 
@@ -43,3 +43,16 @@ class Config:
     AUTO_APPROVE_SCHEDULE = os.environ.get("AUTO_APPROVE_SCHEDULE", "false").lower() == "true"
     INCIDENT_COOLDOWN_MINUTES = int(os.environ.get("INCIDENT_COOLDOWN_MINUTES", "5"))
     POLL_INTERVAL_SECONDS = int(os.environ.get("POLL_INTERVAL_SECONDS", "30"))
+
+    @classmethod
+    def validate_required_settings(cls):
+        missing = [
+            name
+            for name in ("SECRET_KEY", "ADMIN_USERNAME", "ADMIN_PASSWORD")
+            if not getattr(cls, name)
+        ]
+        if missing:
+            raise RuntimeError(
+                "Required configuration is missing: "
+                f"{', '.join(missing)}. Set these environment variables before starting the app."
+            )

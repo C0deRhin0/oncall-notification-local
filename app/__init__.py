@@ -20,6 +20,7 @@ def create_app():
 
     from app.config import Config
     app.config.from_object(Config)
+    Config.validate_required_settings()
 
     os.makedirs(app.instance_path, exist_ok=True)
 
