@@ -4,6 +4,31 @@ Undergraduate capstone project. Monitors a dedicated Gmail inbox and automatical
 
 ---
 
+## Incident escalation and operator visibility
+
+The application joins email ingestion, shift-aware call order, provider callbacks, and an incident audit trail. Mail and notification providers require separate private configuration.
+
+```mermaid
+flowchart LR
+M["Monitored inbox"]:::source --> P["Scheduled polling"]:::process
+    P --> I[("Incident record")]:::store
+    S["Approved shifts<br/>engineer queue"]:::source --> O["Escalation orchestrator"]:::process
+    I --> O
+    O --> C["Voice call<br/>configured provider"]:::process
+    C --> R{"Call outcome"}:::review
+    R -->|answered| A["Follow-up notification"]:::result
+    R -->|missed| N["Next engineer<br/>or fallback broadcast"]:::review
+    A --> L[("Notification logs")]:::store
+    N --> L
+    classDef source fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e
+    classDef process fill:#ede9fe,stroke:#7c3aed,color:#3b0764
+    classDef store fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef review fill:#fef3c7,stroke:#d97706,color:#78350f
+    classDef result fill:#f1f5f9,stroke:#475569,color:#0f172a
+```
+
+The admin pages expose the incident feed, engineer queue, schedules, and logs. Use a disposable database with fictional records when demonstrating the interface; live polling and calls are separate integration checks.
+
 ## Prerequisites
 
 - macOS with Python 3.11+
@@ -61,7 +86,7 @@ The system uses IMAP to poll Gmail. Google requires an App Password (not your re
    ```
 4. Start ngrok before starting the app:
    ```bash
-   ngrok http 5000
+   ngrok http 5001
    ```
 
 The app auto-reads the ngrok URL on startup and pushes it to Twilio. **You do not need to manually configure Twilio webhook URLs.**
@@ -140,7 +165,7 @@ Each engineer gets a unique URL: `http://your-server/portal/<uuid-token>`
 
 ---
 
-## Call Cost Estimate
+## Historical call-cost illustration
 
 | Action | Cost |
 |---|---|
@@ -148,7 +173,7 @@ Each engineer gets a unique URL: `http://your-server/portal/<uuid-token>`
 | SMS (per message) | ~$0.0079 |
 | Demo with 3 test incidents | < $1.00 total |
 
-Twilio trial credit ($15) is more than sufficient for the capstone demo.
+These figures are historical illustrations, not current pricing or a guaranteed trial allowance. Check the configured provider before enabling outbound notifications.
 
 ---
 
