@@ -1,0 +1,18 @@
+{
+  "project": "oncall-notification-local",
+  "capturedAt": "2026-10-23T05:31:22.571Z",
+  "screens": [
+    {
+      "file": "dashboard.png",
+      "caption": "Running app · fictional incidents in a disposable local database",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "schedules.png",
+      "caption": "Running app · fictional engineer schedules",
+      "width": 1440,
+      "height": 1000
+    }
+  ]
+}

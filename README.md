@@ -196,3 +196,11 @@ oncall-system/
 ├── .env                    # Secrets (gitignored)
 └── requirements.txt
 ```
+
+## Captures
+
+Fictional local preview data; no external notifications were sent.
+
+![Running app · fictional incidents in a disposable local database](docs/screenshots/dashboard.png)
+
+![Running app · fictional engineer schedules](docs/screenshots/schedules.png)
